@@ -1,60 +1,65 @@
 package co.com.pragma.api;
 
-import org.assertj.core.api.Assertions;
+import co.com.pragma.model.person.Person;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.reactive.function.server.RouterFunction;
+import org.springframework.web.reactive.function.server.ServerResponse;
 
-@ContextConfiguration(classes = {RouterRest.class, Handler.class})
-@WebFluxTest
+@ExtendWith(MockitoExtension.class)
 class RouterRestTest {
 
-    @Autowired
-    private WebTestClient webTestClient;
+  @Mock
+  private Handler handler;
 
-    @Test
-    void testListenGETUseCase() {
-        webTestClient.get()
-                .uri("/api/usecase/path")
-                .accept(MediaType.APPLICATION_JSON)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(String.class)
-                .value(userResponse -> {
-                            Assertions.assertThat(userResponse).isEmpty();
-                        }
-                );
-    }
+  private Person person;
 
-    @Test
-    void testListenGETOtherUseCase() {
-        webTestClient.get()
-                .uri("/api/otherusercase/path")
-                .accept(MediaType.APPLICATION_JSON)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(String.class)
-                .value(userResponse -> {
-                            Assertions.assertThat(userResponse).isEmpty();
-                        }
-                );
-    }
+  private WebTestClient testClient;
 
-    @Test
-    void testListenPOSTUseCase() {
-        webTestClient.post()
-                .uri("/api/usecase/otherpath")
-                .accept(MediaType.APPLICATION_JSON)
-                .bodyValue("")
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(String.class)
-                .value(userResponse -> {
-                            Assertions.assertThat(userResponse).isEmpty();
-                        }
-                );
-    }
+  @BeforeEach
+  void setUp() {
+    person = new Person();
+    person.setIdNumber("123");
+    person.setName("Juan");
+    person.setEmail("juan@mail.com");
+
+    RouterFunction<ServerResponse> routerFunction = new RouterRest().routerFunction(handler);
+
+    testClient = WebTestClient
+        .bindToRouterFunction(routerFunction)
+        .build();
+  }
+
+  @Test
+  void route_postPerson_callsHandler() {
+    Mockito.when(handler.listenSavePerson(Mockito.any()))
+        .thenReturn(ServerResponse.ok().bodyValue(person));
+
+    testClient.post()
+        .uri("/api/person/v1")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(person)
+        .exchange()
+        .expectStatus().isOk();
+    Mockito.verify(handler).listenSavePerson(Mockito.any());
+  }
+
+  @Test
+  void route_getPersonById_callsHandler() {
+    Mockito.when(handler.listenGetPersonByIdNumber(Mockito.any()))
+        .thenReturn(ServerResponse.ok().bodyValue(person));
+
+    testClient.get()
+        .uri("/api/person/v1/123")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus().isOk();
+    Mockito.verify(handler).listenGetPersonByIdNumber(Mockito.any());
+  }
 }
