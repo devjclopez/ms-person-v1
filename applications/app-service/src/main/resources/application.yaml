@@ -25,9 +25,9 @@ cors:
   allowed-origins: "http://localhost:4200,http://localhost:8080"
 adapters:
   r2dbc:
-    host: "localhost"
-    port: 5435
-    database: "db_persons"
+    host: "${DB_HOST}"
+    port: 5432
+    database: "db_person_v1"
     schema: "public"
-    username: ${R2DBC_USERNAME}
-    password: ${R2DBC_PASSWORD}
+    username: "${DB_USER}"
+    password: "${DB_PASSWORD}"
